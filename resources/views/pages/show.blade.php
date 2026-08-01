@@ -61,6 +61,10 @@
         <button data-vote="no" onclick="docsFeedback('no')" class="feedback-btn inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-zinc-800 px-5 py-2 text-sm text-slate-600 dark:text-zinc-300 hover:border-red-500 hover:text-red-600 transition-colors">👎 No</button>
     </div>
     <p class="hidden text-sm text-slate-500 dark:text-zinc-400 italic mt-3" id="feedbackThanks">Thanks for your feedback!</p>
+    <p class="{{ ($helpfulCount ?? 0) > 0 ? '' : 'hidden' }} text-sm text-slate-500 dark:text-zinc-400 mt-3" id="feedbackCount">
+        <span id="feedbackCountNumber">{{ $helpfulCount ?? 0 }}</span>
+        <span id="feedbackCountWord">{{ Str::plural('person', $helpfulCount ?? 0) }}</span> found this page helpful.
+    </p>
 </div>
 
 {{-- Footer meta --}}

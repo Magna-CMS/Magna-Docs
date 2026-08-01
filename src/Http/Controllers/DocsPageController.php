@@ -115,6 +115,7 @@ class DocsPageController
             'prev' => $prev,
             'next' => $next,
             'isHome' => $isHome,
+            'helpfulCount' => (int) Cache::get("docs:feedback:{$page->slug}:yes", 0),
             'title' => $metaTitle,
             'description' => $metaDescription,
             // Home renders at /docs but points canonical at the article's own URL.
