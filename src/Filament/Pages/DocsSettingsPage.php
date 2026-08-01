@@ -44,6 +44,16 @@ class DocsSettingsPage extends Page implements HasForms
     /** @var array<string, mixed> */
     public array $data = [];
 
+    /**
+     * A page without this is reachable by URL to anyone who can open the panel,
+     * whatever the navigation shows. These are system settings, so they take
+     * the same permission the core settings screens do.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('settings.manage') ?? false;
+    }
+
     public function mount(): void
     {
         $settings = DocsSettings::get();
