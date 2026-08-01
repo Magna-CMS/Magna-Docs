@@ -66,6 +66,42 @@
     <link rel="stylesheet" href="{{ \Magna\Docs\Http\Controllers\DocsPageController::assetUrl('prism-tomorrow.css') }}">
 
     <style>
+        /* ── Page shell geometry ───────────────────────────────────────────────
+           One place that decides how much of the viewport the docs actually use.
+           Written as plain CSS (not Tailwind utilities) on purpose: docs.css is a
+           pre-compiled stylesheet shipped with the plugin, so tuning these values
+           must never require a Tailwind rebuild on the host.
+
+           The old shell was max-w-7xl (1280px), which left ~320px of dead margin
+           on each side of a 1920px screen. The shell is now 1600px (1728px on
+           ultrawide) with fluid gutters, while the article column stays capped at
+           a readable measure — extra width goes to the nav rails and the column
+           gap, not to over-long lines of prose. */
+        :root {
+            --docs-shell-max: 100rem;                        /* 1600px */
+            --docs-gutter: clamp(1rem, 2.2vw, 2.25rem);      /* 16px → 36px  */
+            --docs-sidebar-w: 17rem;                         /* 272px */
+            --docs-toc-w: 15rem;                             /* 240px */
+            --docs-col-gap: clamp(1.75rem, 3vw, 3.5rem);
+            --docs-content-max: 54rem;                       /* ~864px */
+        }
+        @media (min-width: 1800px) {
+            :root { --docs-shell-max: 108rem; --docs-content-max: 58rem; }
+        }
+        .docs-shell { width: 100%; max-width: var(--docs-shell-max); margin-inline: auto; padding-inline: var(--docs-gutter); }
+        @media (min-width: 768px) { .docs-searchbox { max-width: 34rem; } }
+        @media (min-width: 1024px) {
+            .docs-cols { gap: var(--docs-col-gap); }
+            #left-sidebar { width: var(--docs-sidebar-w); }
+            #docs-main { max-width: var(--docs-content-max); }
+        }
+        @media (min-width: 1280px) {
+            /* margin-left:auto pushes any width left over after the article hits
+               its measure cap into the gap, so the "On this page" rail stays
+               pinned to the right edge instead of floating mid-page. */
+            #right-sidebar { width: var(--docs-toc-w); margin-left: auto; }
+        }
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ddd6fe; border-radius: 4px; }
@@ -187,7 +223,7 @@
 
 {{-- ── HEADER ─────────────────────────────────────────────────────────────── --}}
 <header class="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800/80 dark:bg-darkBg/80">
-    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
+    <div class="docs-shell flex h-16 items-center justify-between gap-4">
 
         <button id="left-sidebar-toggle" class="lg:hidden p-2 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-xl transition-colors" aria-label="Open navigation">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -204,7 +240,7 @@
         </a>
 
         {{-- Desktop search --}}
-        <div class="flex-1 max-w-md hidden md:block">
+        <div class="docs-searchbox flex-1 max-w-md hidden md:block">
             <div class="relative group" id="searchWrap">
                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <svg class="h-4 w-4 text-slate-400 group-focus-within:text-brand transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -245,7 +281,7 @@
 </header>
 
 {{-- Mobile search --}}
-<div class="p-4 border-b border-slate-200/60 bg-white/60 dark:bg-zinc-900/20 md:hidden">
+<div class="docs-shell p-4 border-b border-slate-200/60 bg-white/60 dark:bg-zinc-900/20 md:hidden">
     <div class="relative" id="searchWrapMobile">
         <input type="text" placeholder="Search documentation..." id="search-input-mobile" autocomplete="off"
             class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-4 text-sm text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-brand">
@@ -254,8 +290,8 @@
 </div>
 
 {{-- ── BODY ───────────────────────────────────────────────────────────────── --}}
-<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-col lg:flex-row gap-8">
+<div class="docs-shell">
+    <div class="docs-cols flex flex-col lg:flex-row gap-8">
 
         {{-- LEFT SIDEBAR --}}
         <div id="left-sidebar-backdrop" class="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm hidden lg:hidden"></div>
@@ -450,9 +486,19 @@ function docsFeedback(vote) {
             if (d.ok) {
                 document.querySelectorAll('.feedback-btn').forEach(b => b.classList.toggle('voted', b.dataset.vote === vote));
                 const t = document.getElementById('feedbackThanks'); if (t) t.classList.remove('hidden');
+                if (vote === 'yes') docsShowHelpfulCount(d.count);
                 localStorage.setItem(key, vote);
             }
         }).catch(() => {});
+}
+function docsShowHelpfulCount(count) {
+    const wrap = document.getElementById('feedbackCount');
+    if (!wrap || typeof count !== 'number') return;
+    const num = document.getElementById('feedbackCountNumber');
+    const word = document.getElementById('feedbackCountWord');
+    if (num) num.textContent = String(count);
+    if (word) word.textContent = count === 1 ? 'person' : 'people';
+    wrap.classList.remove('hidden');
 }
 function docsInitFeedback() {
     const el = document.getElementById('docsFeedback'); if (!el) return;
@@ -463,7 +509,9 @@ function docsInitFeedback() {
     }
 }
 function docsEnhance() {
-    if (window.Prism) window.Prism.highlightAll();
+    // Isolate syntax highlighting: a Prism plugin error must never abort the
+    // rest of the page enhancers (accordions, feedback, TOC).
+    try { if (window.Prism) window.Prism.highlightAll(); } catch (e) { /* highlighting is non-critical */ }
     docsInitCopyButtons();
     docsInitAccordions();
     docsInitFeedback();
