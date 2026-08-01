@@ -15,11 +15,11 @@
             "role": "Developer"
         }
     ],
-    "homepage": "https://github.com/jish-44/Magna-Docs",
+    "homepage": "https://github.com/Magna-CMS/Magna-Docs",
     "support": {
-        "issues": "https://github.com/jish-44/Magna-Docs/issues",
-        "source": "https://github.com/jish-44/Magna-Docs",
-        "docs": "https://github.com/jish-44/Magna-Docs#readme"
+        "issues": "https://github.com/Magna-CMS/Magna-Docs/issues",
+        "source": "https://github.com/Magna-CMS/Magna-Docs",
+        "docs": "https://github.com/Magna-CMS/Magna-Docs#readme"
     },
     "require": {
         "php": "^8.3",
