@@ -15,7 +15,7 @@ class DocTree
      *
      * Returns:
      *   [
-     *     ['title' => 'Collection Name', 'children' => [...pages...]],
+     *     ['title' => 'Collection Name', 'icon' => 'book-open', 'color' => '#6366f1', 'children' => [...pages...]],
      *     ...
      *     ['title' => 'Uncategorised', 'slug' => '...', 'children' => []],  // top-level only
      *   ]
@@ -30,7 +30,7 @@ class DocTree
         $collections = DocCollection::query()
             ->where('is_public', true)
             ->orderBy('order')
-            ->get(['id', 'title']);
+            ->get(['id', 'title', 'icon', 'color']);
 
         $nodes = [];
 
@@ -40,6 +40,8 @@ class DocTree
             if ($children !== []) {
                 $nodes[] = [
                     'title' => $collection->title,
+                    'icon' => $collection->icon,
+                    'color' => $collection->color,
                     'children' => $children,
                 ];
             }

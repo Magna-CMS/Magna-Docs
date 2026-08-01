@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Magna\Docs\Filament\Resources;
 
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,6 +16,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Magna\Docs\Filament\Resources\DocCollectionResource\Pages;
 use Magna\Docs\Models\DocCollection;
@@ -32,6 +34,34 @@ class DocCollectionResource extends Resource
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    // Stage 10: this resource had zero authorization at all — any
+    // authenticated panel user could manage doc collections. Reuses the
+    // docs.pages.* permissions the plugin already declares in magna.json.
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('docs.pages.view') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('docs.pages.manage') ?? false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->user()?->can('docs.pages.manage') ?? false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()?->can('docs.pages.manage') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('docs.pages.manage') ?? false;
+    }
 
     /** @return array<NavigationItem> */
     public static function getNavigationItems(): array
@@ -91,6 +121,12 @@ class DocCollectionResource extends Resource
                     Forms\Components\TextInput::make('icon')
                         ->default('book-open')
                         ->helperText('Heroicon name (e.g. book-open, code-bracket).')
+                        ->datalist(fn () => static::outlineIconNames())
+                        ->rule(fn () => function (string $attribute, $value, \Closure $fail) {
+                            if (! empty($value) && ! in_array($value, static::outlineIconNames(), true)) {
+                                $fail('Unknown Heroicon name. It must match an outline icon, e.g. book-open, code-bracket.');
+                            }
+                        })
                         ->columnSpan(1),
 
                     Forms\Components\ColorPicker::make('color')
@@ -110,6 +146,31 @@ class DocCollectionResource extends Resource
                         ->columnSpanFull(),
                 ]),
         ]);
+    }
+
+    /**
+     * Bare (unprefixed) names of every available `heroicon-o-*` outline icon,
+     * e.g. "book-open", "code-bracket" — used for the icon field's datalist
+     * and existence validation so admins can't save a name that 404s on the frontend.
+     *
+     * @return array<int, string>
+     */
+    protected static function outlineIconNames(): array
+    {
+        return once(function () {
+            $providerPath = (new \ReflectionClass(BladeHeroiconsServiceProvider::class))->getFileName();
+            $svgPath = dirname($providerPath).'/../resources/svg';
+
+            if (! is_dir($svgPath)) {
+                return [];
+            }
+
+            return collect(glob($svgPath.'/o-*.svg'))
+                ->map(fn (string $file) => Str::of(basename($file, '.svg'))->after('o-')->toString())
+                ->sort()
+                ->values()
+                ->all();
+        });
     }
 
     public static function table(Table $table): Table
