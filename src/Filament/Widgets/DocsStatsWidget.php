@@ -18,8 +18,6 @@ class DocsStatsWidget extends Widget
     // Sort to the top of the dashboard.
     protected static ?int $sort = 0;
 
-    protected int|string|array $columnSpan = 'full';
-
     /** Only visible when the docs plugin is active and the user has access. */
     public static function canView(): bool
     {
