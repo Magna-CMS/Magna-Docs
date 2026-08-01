@@ -1,8 +1,8 @@
 {
     "name": "magna/docs",
     "displayName": "Magna Docs",
-    "description": "Create and manage hierarchical documentation pages, with a markdown editor and a delivery API for static-site frontends.",
-    "version": "1.0.0",
+    "description": "Create and manage hierarchical documentation pages, with a markdown editor, a delivery API for static-site frontends, and one-click import/export of a whole docs site.",
+    "version": "1.1.0",
     "author": "Magna Team",
     "license": "MIT",
     "compat": {
@@ -19,7 +19,7 @@
         "docs.pages.manage"
     ],
     "uninstall": {
-        "tables": ["docs_pages", "doc_collections"],
+        "tables": ["docs_page_translations", "docs_pages", "doc_collections"],
         "contentTypes": []
     }
 }
