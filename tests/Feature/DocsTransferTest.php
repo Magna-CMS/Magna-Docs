@@ -24,7 +24,7 @@ use Magna\Users\User;
 uses(PluginTestCase::class);
 
 beforeEach(function (): void {
-    $this->enablePlugin('magna/docs');
+    $this->enablePlugin('magna-cms/docs');
 
     Storage::fake('local');
     Storage::fake('public');

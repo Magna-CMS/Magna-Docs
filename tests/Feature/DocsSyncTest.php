@@ -11,7 +11,7 @@ use Magna\Testing\PluginTestCase;
 uses(PluginTestCase::class);
 
 beforeEach(function (): void {
-    $this->enablePlugin('magna/docs');
+    $this->enablePlugin('magna-cms/docs');
 
     // The plugin is enabled mid-test, after PluginsServiceProvider::boot()
     // already registered plugin commands, so register it here. In a real CLI

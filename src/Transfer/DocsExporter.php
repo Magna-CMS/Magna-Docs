@@ -128,7 +128,7 @@ final class DocsExporter
             'version' => DocsArchive::VERSION,
             'exported_at' => now()->toIso8601String(),
             'generator' => [
-                'plugin' => 'magna/docs',
+                'plugin' => 'magna-cms/docs',
                 'app_name' => (string) config('app.name'),
                 'app_url' => (string) config('app.url'),
             ],
