@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v1.1.1-6366f1?style=for-the-badge" alt="Version v1.1.1">
+  <img src="https://img.shields.io/badge/version-v1.2.0-6366f1?style=for-the-badge" alt="Version v1.2.0">
   <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.3+">
   <img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 13">
   <img src="https://img.shields.io/badge/Filament-5-f59e0b?style=for-the-badge" alt="Filament 5">
@@ -94,7 +94,7 @@ Magna Docs is the right tool for any team that wants documentation without a sep
 - Multi-language / localization — per-page translations with locale switching
 - Role-based editor permissions (via Magna CMS roles)
 - Shared Magna media library
-- Custom logo, favicon, site name and footer text
+- Custom logo, favicon, site name and footer text, and a switch to hide the "Made with Magna Docs" credit
 - Import / export of a whole docs site as a portable `.zip` archive
 - Server-side rendering — no React, no Vue in the browser
 - Rendered Markdown cached per page, refreshed automatically when a page is saved

@@ -24,6 +24,13 @@ class DocsSettings extends Settings
     public string $copyright_text = '';
 
     /**
+     * Whether the footer shows the "Made with Magna Docs" credit link. On by
+     * default so existing sites look the same; a site that must not name the
+     * software it runs on turns it off.
+     */
+    public bool $show_credit = true;
+
+    /**
      * Role handles that are allowed to create / edit docs pages.
      * Empty = all admin roles can edit.
      *

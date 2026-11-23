@@ -9,6 +9,7 @@ use Filament\Actions\Action as FormAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -64,6 +65,7 @@ class DocsSettingsPage extends Page implements HasForms
             'logo_path' => $settings->logo_path ? [$settings->logo_path] : [],
             'favicon_path' => $settings->favicon_path ? [$settings->favicon_path] : [],
             'copyright_text' => $settings->copyright_text,
+            'show_credit' => $settings->show_credit,
             'editor_roles' => $settings->editor_roles,
         ]);
     }
@@ -160,7 +162,7 @@ class DocsSettingsPage extends Page implements HasForms
                     ]),
 
                 Section::make('Footer')
-                    ->description('Shown at the bottom of every docs page. The right side always shows a "Made with Magna Docs" link.')
+                    ->description('Shown at the bottom of every docs page.')
                     ->schema([
                         TextInput::make('copyright_text')
                             ->label('Copyright text')
@@ -168,6 +170,10 @@ class DocsSettingsPage extends Page implements HasForms
                             ->helperText('Displayed on the left of the docs footer. Leave blank to hide it.')
                             ->maxLength(200)
                             ->nullable(),
+                        Toggle::make('show_credit')
+                            ->label('Show the "Made with Magna Docs" credit')
+                            ->helperText('A link on the right of the footer to the Magna Docs project. Turn it off to keep the footer to your own text.')
+                            ->default(true),
                     ]),
 
                 Section::make('Permissions')
@@ -257,6 +263,7 @@ class DocsSettingsPage extends Page implements HasForms
         $settings->logo_path = $logo;
         $settings->favicon_path = $favicon;
         $settings->copyright_text = trim($data['copyright_text'] ?? '');
+        $settings->show_credit = (bool) ($data['show_credit'] ?? true);
         $settings->editor_roles = (array) ($data['editor_roles'] ?? []);
         $settings->save();
 

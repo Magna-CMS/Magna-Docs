@@ -289,6 +289,7 @@ final class DocsExporter
             'logo_path' => $settings->logo_path,
             'favicon_path' => $settings->favicon_path,
             'copyright_text' => $settings->copyright_text,
+            'show_credit' => $settings->show_credit,
         ];
     }
 

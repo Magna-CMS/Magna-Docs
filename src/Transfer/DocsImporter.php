@@ -133,6 +133,9 @@ final class DocsImporter
         $settings = DocsSettings::get();
         $settings->site_name = trim((string) ($values['site_name'] ?? $settings->site_name));
         $settings->copyright_text = trim((string) ($values['copyright_text'] ?? $settings->copyright_text));
+        if (is_bool($values['show_credit'] ?? null)) {
+            $settings->show_credit = $values['show_credit'];
+        }
         $settings->logo_path = (string) ($media->path($this->stringOrNull($values['logo_path'] ?? null)) ?? '');
         $settings->favicon_path = (string) ($media->path($this->stringOrNull($values['favicon_path'] ?? null)) ?? '');
         $settings->save();
