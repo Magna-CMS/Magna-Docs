@@ -7,6 +7,7 @@ namespace Magna\Docs\Transfer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Magna\Docs\Models\DocCollection;
+use Magna\Docs\Support\DocLocales;
 
 /**
  * First import pass: collections, matched on slug.
@@ -19,6 +20,11 @@ use Magna\Docs\Models\DocCollection;
  *
  * Returns archive-slug => local-id for every collection the archive mentions,
  * including ones that were skipped, so pages still attach to the right place.
+ *
+ * A collection line may carry `translations: [{locale, title, description?}]`
+ * (`name` is accepted for `title`). They are upserted on (collection, locale)
+ * once the collection has an id; a skipped collection keeps its own. Lines
+ * from archives written before 1.3.0 simply have none.
  */
 final class CollectionImporter
 {
@@ -36,6 +42,18 @@ final class CollectionImporter
 
     /** @var array<string, true> archive slugs already handled this run */
     private array $seen = [];
+
+    /** @var array<string, list<array<string, mixed>>> archive slug => its translation records, until it has an id */
+    private array $pendingTranslations = [];
+
+    /**
+     * Translation rows ready to upsert, keyed "collection:locale" so a locale
+     * listed twice collapses to its last entry — one upsert batch must not
+     * touch the same row twice.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $translationRows = [];
 
     public function __construct(
         private readonly ImportOptions $options,
@@ -75,6 +93,7 @@ final class CollectionImporter
         }
 
         $this->flush();
+        $this->flushTranslations();
 
         return $this->map;
     }
@@ -85,17 +104,22 @@ final class CollectionImporter
     private function handle(string $slug, array $line): void
     {
         $attributes = $this->attributes($slug, $line);
+        /** @var list<array<string, mixed>> $translations */
+        $translations = array_values(array_filter(
+            is_array($line['translations'] ?? null) ? $line['translations'] : [],
+            static fn (mixed $row): bool => is_array($row),
+        ));
 
         if (! isset($this->existing[$slug])) {
-            $this->queueInsert($slug, $slug, $attributes);
+            $this->queueInsert($slug, $slug, $attributes, $translations);
 
             return;
         }
 
         match ($this->options->conflict) {
             ConflictStrategy::Skip => $this->skip($slug),
-            ConflictStrategy::Update => $this->update($slug, $attributes),
-            ConflictStrategy::Duplicate => $this->queueInsert($slug, $this->uniqueSlug($slug), $attributes),
+            ConflictStrategy::Update => $this->update($slug, $attributes, $translations),
+            ConflictStrategy::Duplicate => $this->queueInsert($slug, $this->uniqueSlug($slug), $attributes, $translations),
         };
     }
 
@@ -107,12 +131,14 @@ final class CollectionImporter
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  list<array<string, mixed>>  $translations
      */
-    private function update(string $slug, array $attributes): void
+    private function update(string $slug, array $attributes, array $translations): void
     {
         $id = $this->existing[$slug];
         $this->map[$slug] = $id;
         $this->report->add('collections_updated');
+        $this->queueTranslations($slug, $id, $translations);
 
         if ($this->options->dryRun) {
             return;
@@ -124,12 +150,14 @@ final class CollectionImporter
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  list<array<string, mixed>>  $translations
      */
-    private function queueInsert(string $archiveSlug, string $slug, array $attributes): void
+    private function queueInsert(string $archiveSlug, string $slug, array $attributes, array $translations): void
     {
         $attributes['slug'] = $slug;
         $this->buffer[] = $attributes;
         $this->pending[$slug] = $archiveSlug;
+        $this->pendingTranslations[$archiveSlug] = $translations;
         $this->report->add('collections_created');
 
         if (count($this->buffer) >= DocsArchive::BATCH) {
@@ -149,10 +177,12 @@ final class CollectionImporter
             foreach ($this->pending as $slug => $archiveSlug) {
                 $this->existing[$slug] = 0;
                 $this->map[$archiveSlug] = 0;
+                $this->queueTranslations($archiveSlug, 0, $this->pendingTranslations[$archiveSlug] ?? []);
             }
 
             $this->buffer = [];
             $this->pending = [];
+            $this->pendingTranslations = [];
 
             return;
         }
@@ -169,11 +199,67 @@ final class CollectionImporter
             if (isset($ids[$slug])) {
                 $this->map[$archiveSlug] = $ids[$slug];
                 $this->existing[$slug] = $ids[$slug];
+                $this->queueTranslations($archiveSlug, $ids[$slug], $this->pendingTranslations[$archiveSlug] ?? []);
             }
         }
 
         $this->buffer = [];
         $this->pending = [];
+        $this->pendingTranslations = [];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $translations  Raw `translations` array from a collection line.
+     */
+    private function queueTranslations(string $slug, int $collectionId, array $translations): void
+    {
+        foreach ($translations as $translation) {
+            $locale = strtolower(trim(is_scalar($translation['locale'] ?? null) ? (string) $translation['locale'] : ''));
+
+            if (! DocLocales::isWellFormed($locale)) {
+                $this->report->error("Collection '{$slug}': translation with an unusable locale ('{$locale}') was skipped.");
+
+                continue;
+            }
+
+            $this->report->add('collection_translations_imported');
+
+            if ($this->options->dryRun) {
+                continue;
+            }
+
+            $title = $translation['title'] ?? $translation['name'] ?? '';
+
+            $this->translationRows[$collectionId.':'.$locale] = [
+                'doc_collection_id' => $collectionId,
+                'locale' => $locale,
+                'title' => Str::limit(trim(is_scalar($title) ? (string) $title : ''), 255, ''),
+                'description' => $this->nullableString($translation['description'] ?? null),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            if (count($this->translationRows) >= DocsArchive::BATCH) {
+                $this->flushTranslations();
+            }
+        }
+    }
+
+    private function flushTranslations(): void
+    {
+        if ($this->translationRows === [] || $this->options->dryRun) {
+            $this->translationRows = [];
+
+            return;
+        }
+
+        DB::table('docs_collection_translations')->upsert(
+            array_values($this->translationRows),
+            ['doc_collection_id', 'locale'],
+            ['title', 'description', 'updated_at'],
+        );
+
+        $this->translationRows = [];
     }
 
     /**

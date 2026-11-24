@@ -94,7 +94,7 @@ Magna Docs is the right tool for any team that wants documentation without a sep
 - Multi-language / localization — per-page translations with locale switching
 - Role-based editor permissions (via Magna CMS roles)
 - Shared Magna media library
-- Custom logo, favicon, site name and footer text, and a switch to hide the "Made with Magna Docs" credit
+- Custom logo, favicon, share image (og:image), site name and footer text, and a switch to hide the "Made with Magna Docs" credit
 - Import / export of a whole docs site as a portable `.zip` archive
 - Server-side rendering — no React, no Vue in the browser
 - Rendered Markdown cached per page, refreshed automatically when a page is saved
@@ -467,7 +467,7 @@ Magna only discovers plugins under `plugins-dev/` outside the `production` envir
 
 ### Setting up branding
 
-Go to **Magna Docs → Settings** to set site name, logo, and favicon. These affect only the docs section and do not change anything else in your CMS.
+Go to **Magna Docs → Settings** to set site name, logo, favicon and share image (the image a shared docs link shows; a page's own featured image takes precedence). These affect only the docs section and do not change anything else in your CMS.
 
 ### Restricting editor access
 
@@ -507,7 +507,9 @@ The same import/export is available in the admin under **Magna Docs → Import /
 | `GET /api/v1/docs/pages` | JSON — flat list of published pages (API key required) |
 | `GET /api/v1/docs/pages/{slug}` | JSON — single page content + breadcrumb (API key required) |
 
-Append `?lang={locale}` to a page URL to render one of its translations.
+Append `?lang={locale}` to a page URL to render one of its translations. The choice is remembered in a `docs_lang` cookie for a year, so plain links keep the reader's language; `?lang=en` switches back. The sidebar, breadcrumb, Previous/Next, meta tags, search results (`/docs/search?q=…&lang=…`) and the site's own labels follow the same language, falling back to English wherever a translation is missing.
+
+The labels live in `resources/lang/<locale>/docs.php` under the `docs::` translation namespace; English is complete and `hi`, `bn`, `gu`, `kn`, `ml`, `mr`, `ta`, `te` ship ready to translate.
 
 ---
 
@@ -554,7 +556,20 @@ Append `?lang={locale}` to a page URL to render one of its translations.
 | `doc_page_id` | bigint | Translated page |
 | `locale` | string(10) | Locale code (unique per page) |
 | `title` | string | Translated title |
+| `excerpt` | string | Translated summary (nullable) |
+| `meta_title` | string | Translated SEO title (nullable) |
+| `meta_description` | string(500) | Translated SEO description (nullable) |
 | `content` | longtext | Translated Markdown content |
+
+### `docs_collection_translations`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | bigint | Primary key |
+| `doc_collection_id` | bigint | Translated collection |
+| `locale` | string(10) | Locale code (unique per collection) |
+| `title` | string | Translated collection name |
+| `description` | text | Translated description (nullable) |
 
 ---
 
@@ -579,7 +594,7 @@ Yes. Collections and nested pages make it easy to structure any type of document
 Yes. Every page automatically gets meta tags, Open Graph, Twitter Cards, JSON-LD structured data, canonical URLs, and a sitemap.
 
 **Does it support multiple languages?**
-Yes. Magna Docs ships with a built-in translation system — each page can have a translated `title` and `content` per locale, stored in a dedicated `docs_page_translations` table. Visitors switch language with the locale switcher (`?lang={locale}`).
+Yes. Magna Docs ships with a built-in translation system — each page can have a translated title, content, excerpt and SEO meta per locale (`docs_page_translations`), and each collection a translated name (`docs_collection_translations`). Visitors switch language with the locale switcher (`?lang={locale}`), the choice is remembered, and the whole site — sidebar, labels, meta tags, search — follows it.
 
 **Can I serve docs on my own domain (e.g. docs.myapp.com)?**
 Docs are served under `/docs` on your Magna CMS site. The settings page has a **Custom domain** field, but the plugin's routes do not use it yet, so serving docs from a separate domain is not supported out of the box.

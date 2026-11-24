@@ -7,6 +7,7 @@ namespace Magna\Docs\Transfer;
 use Illuminate\Support\Facades\Storage;
 use Magna\Docs\Models\DocCollection;
 use Magna\Docs\Settings\DocsSettings;
+use Magna\Docs\Support\DocTree;
 
 /**
  * Restores a docs archive produced by DocsExporter.
@@ -70,6 +71,9 @@ final class DocsImporter
                 // Collections were inserted flat (see CollectionImporter); this
                 // is what gives them gapless, unique ordering again.
                 DocCollection::resequence();
+                // Rows went in through the query builder, past the model events
+                // that normally drop the cached sidebar trees.
+                DocTree::flush();
             }
 
             if ($options->importSettings) {
@@ -138,6 +142,10 @@ final class DocsImporter
         }
         $settings->logo_path = (string) ($media->path($this->stringOrNull($values['logo_path'] ?? null)) ?? '');
         $settings->favicon_path = (string) ($media->path($this->stringOrNull($values['favicon_path'] ?? null)) ?? '');
+        // Older archives predate the share image: leave the current one alone.
+        if (array_key_exists('og_image_path', $values)) {
+            $settings->og_image_path = (string) ($media->path($this->stringOrNull($values['og_image_path'])) ?? '');
+        }
         $settings->save();
     }
 

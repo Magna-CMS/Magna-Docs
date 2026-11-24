@@ -64,6 +64,7 @@ class DocsSettingsPage extends Page implements HasForms
             'site_name' => $settings->site_name,
             'logo_path' => $settings->logo_path ? [$settings->logo_path] : [],
             'favicon_path' => $settings->favicon_path ? [$settings->favicon_path] : [],
+            'og_image_path' => $settings->og_image_path ? [$settings->og_image_path] : [],
             'copyright_text' => $settings->copyright_text,
             'show_credit' => $settings->show_credit,
             'editor_roles' => $settings->editor_roles,
@@ -159,6 +160,40 @@ class DocsSettingsPage extends Page implements HasForms
                                     ->action(fn () => $this->removeFavicon()),
                             ]),
                         ]),
+
+                        // Share image — what a link to the docs shows when it is
+                        // posted on social media or in a chat app.
+                        Group::make([
+                            FileUpload::make('og_image_path')
+                                ->label('Share image')
+                                ->image()
+                                ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                                ->disk('public')
+                                ->directory('docs-branding')
+                                ->imageEditor()
+                                ->imageEditorAspectRatios(['1.91:1', null])
+                                ->panelLayout('integrated')
+                                ->helperText('1200×630 recommended. PNG, JPG or WebP. Shown when a docs link is shared. Pages with a featured image share that instead.')
+                                ->nullable(),
+
+                            FormActions::make([
+                                FormAction::make('browseOgImageLibrary')
+                                    ->label('Browse media library')
+                                    ->icon('heroicon-m-photo')
+                                    ->link()
+                                    ->size('sm')
+                                    ->extraAttributes(['class' => 'ds-browse-link'])
+                                    ->action(fn () => $this->dispatch('magna:open-media-picker', target: 'og-image')),
+                                FormAction::make('removeOgImage')
+                                    ->label('Remove current share image')
+                                    ->icon('heroicon-m-trash')
+                                    ->link()
+                                    ->color('danger')
+                                    ->size('sm')
+                                    ->visible(fn (): bool => filled(array_filter((array) ($this->data['og_image_path'] ?? []))))
+                                    ->action(fn () => $this->removeOgImage()),
+                            ]),
+                        ])->columnSpanFull(),
                     ]),
 
                 Section::make('Footer')
@@ -201,6 +236,7 @@ class DocsSettingsPage extends Page implements HasForms
         match ($target) {
             'logo' => $this->data['logo_path'] = [$path],
             'favicon' => $this->data['favicon_path'] = [$path],
+            'og-image' => $this->data['og_image_path'] = [$path],
             default => null,
         };
 
@@ -234,6 +270,18 @@ class DocsSettingsPage extends Page implements HasForms
         Notification::make()->title('Favicon removed — the CMS favicon will be used.')->success()->send();
     }
 
+    public function removeOgImage(): void
+    {
+        $this->data['og_image_path'] = [];
+        $this->form->fill($this->data);
+
+        $settings = DocsSettings::get();
+        $settings->og_image_path = '';
+        $settings->save();
+
+        Notification::make()->title('Share image removed — pages without a featured image share without one.')->success()->send();
+    }
+
     // ── Save ──────────────────────────────────────────────────────────────────
 
     public function save(): void
@@ -249,7 +297,14 @@ class DocsSettingsPage extends Page implements HasForms
             ? (string) (array_values($data['favicon_path'])[0] ?? '')
             : (string) ($data['favicon_path'] ?? '');
 
+        $ogImage = is_array($data['og_image_path'] ?? null)
+            ? (string) (array_values($data['og_image_path'])[0] ?? '')
+            : (string) ($data['og_image_path'] ?? '');
+
         // Register freshly-uploaded branding files into the media library.
+        if ($ogImage !== '') {
+            $ogImage = $this->ingestToMedia($ogImage) ?? $ogImage;
+        }
         if ($logo !== '') {
             $logo = $this->ingestToMedia($logo) ?? $logo;
         }
@@ -262,6 +317,7 @@ class DocsSettingsPage extends Page implements HasForms
         $settings->site_name = trim($data['site_name'] ?? '');
         $settings->logo_path = $logo;
         $settings->favicon_path = $favicon;
+        $settings->og_image_path = $ogImage;
         $settings->copyright_text = trim($data['copyright_text'] ?? '');
         $settings->show_credit = (bool) ($data['show_credit'] ?? true);
         $settings->editor_roles = (array) ($data['editor_roles'] ?? []);

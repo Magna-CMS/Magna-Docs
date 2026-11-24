@@ -20,6 +20,13 @@ class DocsSettings extends Settings
     /** Path to the favicon file. Falls back to the CMS favicon. */
     public string $favicon_path = '';
 
+    /**
+     * Path to the share image (public disk) used for og:image / twitter:image
+     * when a page has no featured image of its own. Empty = no image, and
+     * links share as a plain summary card.
+     */
+    public string $og_image_path = '';
+
     /** Copyright / footer text shown on the left of the docs footer. Empty = hidden. */
     public string $copyright_text = '';
 

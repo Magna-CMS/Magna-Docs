@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Magna\Docs\Filament\Resources\DocCollectionResource\Pages;
 use Magna\Docs\Models\DocCollection;
+use Magna\Docs\Support\DocLocales;
 
 class DocCollectionResource extends Resource
 {
@@ -144,6 +145,47 @@ class DocCollectionResource extends Resource
                         ->default(true)
                         ->helperText('Hidden collections are excluded from the frontend.')
                         ->columnSpanFull(),
+                ]),
+
+            // The collection's name in other languages: the sidebar heading a
+            // reader sees when they read the docs in that language. Without
+            // one, the English title shows.
+            Section::make('Translations')
+                ->description('The collection name in other languages, shown as the sidebar heading to readers of that language.')
+                ->collapsible()
+                ->schema([
+                    Forms\Components\Repeater::make('translations')
+                        ->hiddenLabel()
+                        ->relationship()
+                        ->columns(2)
+                        ->defaultItems(0)
+                        ->addActionLabel('Add translation')
+                        ->itemLabel(fn (array $state): ?string => filled($state['locale'] ?? null)
+                            ? DocLocales::adminLabel((string) $state['locale'])
+                            : null)
+                        ->collapsible()
+                        ->schema([
+                            Forms\Components\Select::make('locale')
+                                ->label('Language')
+                                ->options(fn (): array => collect(DocLocales::LABELS)
+                                    ->except('en')
+                                    ->mapWithKeys(fn (array $label, string $code): array => [$code => $label[0].' '.DocLocales::adminLabel($code)])
+                                    ->all())
+                                ->searchable()
+                                ->required()
+                                ->distinct()
+                                ->columnSpan(1),
+
+                            Forms\Components\TextInput::make('title')
+                                ->label('Name')
+                                ->required()
+                                ->maxLength(255)
+                                ->columnSpan(1),
+
+                            Forms\Components\Textarea::make('description')
+                                ->rows(2)
+                                ->columnSpanFull(),
+                        ]),
                 ]),
         ]);
     }

@@ -653,7 +653,7 @@ html.de-dark .doc-editor-root .de-browse-link { color: var(--de-brand-hov); }
                                 wire:loading.attr="disabled" wire:target="editingLocale,addLanguage,deleteLanguage"
                                 title="Language you are editing">
                             @foreach ($this->availableLocales as $loc)
-                                <option value="{{ $loc }}">{{ \Magna\Docs\Support\DocLocales::flag($loc) }} {{ \Magna\Docs\Support\DocLocales::label($loc) }}{{ $loc === 'en' ? ' · default' : '' }}</option>
+                                <option value="{{ $loc }}">{{ \Magna\Docs\Support\DocLocales::flag($loc) }} {{ \Magna\Docs\Support\DocLocales::adminLabel($loc) }}{{ $loc === 'en' ? ' · default' : '' }}</option>
                             @endforeach
                         </select>
 
@@ -670,8 +670,8 @@ html.de-dark .doc-editor-root .de-browse-link { color: var(--de-brand-hov); }
                                         <div class="de-lang-menu-list">
                                             @foreach ($addable as $loc)
                                                 <button type="button" wire:click="addLanguage('{{ $loc }}')" @click="open = false; q = ''"
-                                                        x-show="q === '' || @js(strtolower(\Magna\Docs\Support\DocLocales::label($loc))).includes(q.toLowerCase().trim())">
-                                                    {{ \Magna\Docs\Support\DocLocales::flag($loc) }} {{ \Magna\Docs\Support\DocLocales::label($loc) }}
+                                                        x-show="q === '' || @js(mb_strtolower(\Magna\Docs\Support\DocLocales::adminLabel($loc).' '.$loc)).includes(q.toLowerCase().trim())">
+                                                    {{ \Magna\Docs\Support\DocLocales::flag($loc) }} {{ \Magna\Docs\Support\DocLocales::adminLabel($loc) }}
                                                 </button>
                                             @endforeach
                                         </div>
@@ -681,7 +681,7 @@ html.de-dark .doc-editor-root .de-browse-link { color: var(--de-brand-hov); }
 
                             @if ($this->editingLocale !== 'en')
                                 <button type="button" class="de-lang-del" wire:click="deleteLanguage"
-                                        wire:confirm="Delete this translation? The {{ \Magna\Docs\Support\DocLocales::label($this->editingLocale) }} version will be removed.">
+                                        wire:confirm="Delete this translation? The {{ \Magna\Docs\Support\DocLocales::englishName($this->editingLocale) }} version will be removed.">
                                     Remove
                                 </button>
                             @endif

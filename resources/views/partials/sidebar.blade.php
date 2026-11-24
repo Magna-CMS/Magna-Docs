@@ -32,5 +32,5 @@
         </ul>
     @endif
 @empty
-    <p class="text-sm text-slate-400 dark:text-zinc-500 px-1">No pages yet.</p>
+    <p class="text-sm text-slate-400 dark:text-zinc-500 px-1">{{ __('docs::docs.no_pages', [], $currentLocale ?? 'en') }}</p>
 @endforelse

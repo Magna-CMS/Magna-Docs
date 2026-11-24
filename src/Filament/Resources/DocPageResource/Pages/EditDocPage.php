@@ -263,6 +263,35 @@ class EditDocPage extends EditRecord
                             ->helperText('Lower numbers appear first in the sidebar.'),
                     ]),
 
+                // The translation's own summary and search-result text. Shown
+                // only while a translation is open; the English page keeps its
+                // SEO section below. Saved by saveTranslation(), never by the
+                // page save (see mutateFormDataBeforeSave()).
+                Section::make('Translation summary & SEO')
+                    ->collapsible()
+                    ->visible(fn (): bool => $this->editingLocale !== 'en')
+                    ->schema([
+                        Textarea::make('translation_excerpt')
+                            ->label('Excerpt')
+                            ->rows(2)
+                            ->maxLength(255)
+                            ->placeholder('Short summary shown under the title…')
+                            ->helperText('Shown under the title and in search results. Leave blank for none.'),
+
+                        TextInput::make('translation_meta_title')
+                            ->label('Meta title')
+                            ->maxLength(70)
+                            ->placeholder('Overrides the translated title in search results')
+                            ->helperText('Recommended: 50–70 characters.'),
+
+                        Textarea::make('translation_meta_description')
+                            ->label('Meta description')
+                            ->rows(3)
+                            ->maxLength(160)
+                            ->placeholder('160-character summary shown in search results…')
+                            ->helperText('Falls back to the excerpt, then the start of the content.'),
+                    ]),
+
                 Section::make('SEO')
                     ->collapsible()
                     ->collapsed()
@@ -323,6 +352,7 @@ class EditDocPage extends EditRecord
         if ($locale === 'en') {
             $this->data['title'] = $this->record->title;
             $this->data['content'] = $this->record->content;
+            unset($this->data['translation_excerpt'], $this->data['translation_meta_title'], $this->data['translation_meta_description']);
 
             return;
         }
@@ -330,6 +360,9 @@ class EditDocPage extends EditRecord
         $translation = $this->record->translations()->firstWhere('locale', $locale);
         $this->data['title'] = $translation?->title ?? '';
         $this->data['content'] = $translation?->content ?? '';
+        $this->data['translation_excerpt'] = $translation->excerpt ?? '';
+        $this->data['translation_meta_title'] = $translation->meta_title ?? '';
+        $this->data['translation_meta_description'] = $translation->meta_description ?? '';
     }
 
     public function addLanguage(string $locale): void
@@ -349,7 +382,7 @@ class EditDocPage extends EditRecord
         $this->editingLocale = $locale;
         $this->loadLocaleContent($locale);
 
-        Notification::make()->title(DocLocales::label($locale).' translation added')->success()->send();
+        Notification::make()->title(DocLocales::englishName($locale).' translation added')->success()->send();
     }
 
     public function deleteLanguage(): void
@@ -365,7 +398,7 @@ class EditDocPage extends EditRecord
         $this->refreshAvailableLocales();
         $this->loadLocaleContent('en');
 
-        Notification::make()->title(DocLocales::label($locale).' translation removed')->success()->send();
+        Notification::make()->title(DocLocales::englishName($locale).' translation removed')->success()->send();
     }
 
     private function saveTranslation(): void
@@ -376,13 +409,25 @@ class EditDocPage extends EditRecord
             ['locale' => $this->editingLocale],
             [
                 'title' => (string) ($state['title'] ?? ''),
+                'excerpt' => $this->translationField('translation_excerpt', 255),
+                'meta_title' => $this->translationField('translation_meta_title', 255),
+                'meta_description' => $this->translationField('translation_meta_description', 500),
                 'content' => $state['content'] ?? null,
             ],
         );
 
         $this->refreshAvailableLocales();
         $this->editorStatus = 'draft_saved';
-        Notification::make()->title(DocLocales::label($this->editingLocale).' translation saved')->success()->send();
+        Notification::make()->title(DocLocales::englishName($this->editingLocale).' translation saved')->success()->send();
+    }
+
+    /** A translation-only sidebar value, trimmed and capped to its column; null when blank. */
+    private function translationField(string $key, int $limit): ?string
+    {
+        $value = $this->data[$key] ?? null;
+        $value = is_scalar($value) ? trim((string) $value) : '';
+
+        return $value === '' ? null : Str::limit($value, $limit, '');
     }
 
     public function saveDraft(): void
@@ -440,7 +485,11 @@ class EditDocPage extends EditRecord
     {
         $merged = array_merge($data, $this->sidebarForm->getState());
         $merged['order'] = (int) ($merged['order'] ?? 0);
-        unset($merged['_visibility'], $merged['_author'], $merged['_status_display']);
+        unset(
+            $merged['_visibility'], $merged['_author'], $merged['_status_display'],
+            // Translation-only fields: never written onto the English page.
+            $merged['translation_excerpt'], $merged['translation_meta_title'], $merged['translation_meta_description'],
+        );
 
         // FileUpload returns an array; DB expects a plain string path.
         if (is_array($merged['featured_image'] ?? null)) {

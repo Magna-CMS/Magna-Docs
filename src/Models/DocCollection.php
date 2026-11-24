@@ -7,6 +7,7 @@ namespace Magna\Docs\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
+use Magna\Docs\Support\DocTree;
 
 class DocCollection extends Model
 {
@@ -51,12 +52,22 @@ class DocCollection extends Model
 
         static::saved(function (DocCollection $collection): void {
             static::applyReorder($collection);
+            DocTree::flush();
         });
+
+        static::deleted(fn () => DocTree::flush());
     }
 
+    /** @return HasMany<DocPage, $this> */
     public function pages(): HasMany
     {
         return $this->hasMany(DocPage::class, 'collection_id')->orderBy('order');
+    }
+
+    /** @return HasMany<DocCollectionTranslation, $this> */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(DocCollectionTranslation::class, 'doc_collection_id');
     }
 
     /**

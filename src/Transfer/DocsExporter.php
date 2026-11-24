@@ -49,7 +49,7 @@ final class DocsExporter
                 MediaReferences::storagePathPrefix(),
             );
 
-            $collections = $this->writeCollections($workPath.'/'.DocsArchive::COLLECTIONS, $options);
+            $collectionCounts = $this->writeCollections($workPath.'/'.DocsArchive::COLLECTIONS, $options);
             $pageCounts = $this->writePages($workPath.'/'.DocsArchive::PAGES, $options, $media);
 
             $settings = $options->includeSettings ? $this->settingsSnapshot($media) : null;
@@ -57,7 +57,8 @@ final class DocsExporter
             $this->writeMediaIndex($workPath.'/'.DocsArchive::MEDIA_INDEX, $mediaEntries);
 
             $counts = [
-                'collections' => $collections,
+                'collections' => $collectionCounts['collections'],
+                'collection_translations' => $collectionCounts['translations'],
                 'pages' => $pageCounts['pages'],
                 'translations' => $pageCounts['translations'],
                 'media' => count($mediaEntries),
@@ -155,12 +156,16 @@ final class DocsExporter
 
     // ── Streamed writers ─────────────────────────────────────────────────────
 
-    private function writeCollections(string $file, ExportOptions $options): int
+    /**
+     * @return array{collections: int, translations: int}
+     */
+    private function writeCollections(string $file, ExportOptions $options): array
     {
         $handle = $this->openWrite($file);
         $count = 0;
+        $translations = 0;
 
-        $query = DocCollection::query()->orderBy('order')->orderBy('id');
+        $query = DocCollection::query()->with('translations')->orderBy('order')->orderBy('id');
 
         if ($options->isScoped()) {
             $query->whereIn('slug', $options->collections);
@@ -168,6 +173,16 @@ final class DocsExporter
 
         foreach ($query->lazyById(DocsArchive::BATCH) as $collection) {
             /** @var DocCollection $collection */
+            $rows = [];
+            foreach ($collection->translations->sortBy('locale') as $translation) {
+                $rows[] = [
+                    'locale' => (string) $translation->locale,
+                    'title' => (string) $translation->title,
+                    'description' => $translation->description,
+                ];
+                $translations++;
+            }
+
             fwrite($handle, $this->line([
                 'slug' => (string) $collection->slug,
                 'title' => (string) $collection->title,
@@ -176,13 +191,14 @@ final class DocsExporter
                 'color' => $collection->color,
                 'order' => (int) $collection->order,
                 'is_public' => (bool) $collection->is_public,
+                'translations' => $rows,
             ]));
             $count++;
         }
 
         fclose($handle);
 
-        return $count;
+        return ['collections' => $count, 'translations' => $translations];
     }
 
     /**
@@ -218,6 +234,9 @@ final class DocsExporter
                 $rows[] = [
                     'locale' => (string) $translation->locale,
                     'title' => (string) $translation->title,
+                    'excerpt' => $translation->excerpt,
+                    'meta_title' => $translation->meta_title,
+                    'meta_description' => $translation->meta_description,
                     'content' => (string) $translation->content,
                 ];
                 $translations++;
@@ -283,11 +302,13 @@ final class DocsExporter
 
         $media->noteStoredPath($settings->logo_path);
         $media->noteStoredPath($settings->favicon_path);
+        $media->noteStoredPath($settings->og_image_path);
 
         return [
             'site_name' => $settings->site_name,
             'logo_path' => $settings->logo_path,
             'favicon_path' => $settings->favicon_path,
+            'og_image_path' => $settings->og_image_path,
             'copyright_text' => $settings->copyright_text,
             'show_credit' => $settings->show_credit,
         ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Magna\Docs;
 
 use Illuminate\Console\Command;
+use Illuminate\Translation\Translator;
 use Magna\Contracts\RegistersAdminResources;
 use Magna\Contracts\RegistersCommands;
 use Magna\Contracts\RegistersDashboardWidgets;
@@ -41,6 +42,14 @@ class DocsPlugin extends Plugin implements RegistersAdminResources, RegistersCom
     {
         $this->loadViewsFrom('resources/views', 'docs');
         $this->loadRoutesFrom('routes/web.php', 'web');
+
+        // Public docs strings, as `docs::docs.<key>` — rendered in the reader's
+        // docs language, not the app locale. The SDK leaves translation
+        // registration to a plain container call (it lives only on Laravel's
+        // concrete Translator).
+        /** @var Translator $translator */
+        $translator = $this->app->make('translator');
+        $translator->addNamespace('docs', $this->basePath.'/resources/lang');
     }
 
     public function adminResources(): array

@@ -6,16 +6,26 @@ namespace Magna\Docs\Transfer;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Magna\Docs\Support\DocLocales;
 
 /**
  * Buffered writer for page translations. Rows arrive as their parent page's id
  * becomes known and are flushed in batches with an upsert keyed on
  * (doc_page_id, locale) — the table's own unique index — so re-importing an
  * archive updates translations instead of duplicating them.
+ *
+ * `excerpt`, `meta_title` and `meta_description` are optional (archives from
+ * before 1.3.0 have none); a missing one is stored as null, like the page's
+ * own optional fields.
  */
 final class TranslationImporter
 {
-    /** @var list<array<string, mixed>> */
+    /**
+     * Keyed "page:locale" so a locale listed twice collapses to its last entry —
+     * one upsert batch must not touch the same row twice (Postgres refuses).
+     *
+     * @var array<string, array<string, mixed>>
+     */
     private array $buffer = [];
 
     public function __construct(
@@ -30,9 +40,9 @@ final class TranslationImporter
     public function queue(int $pageId, array $translations): void
     {
         foreach ($translations as $translation) {
-            $locale = strtolower(trim((string) ($translation['locale'] ?? '')));
+            $locale = strtolower(trim(is_scalar($translation['locale'] ?? null) ? (string) $translation['locale'] : ''));
 
-            if (preg_match('/^[a-z]{2}(?:[-_][a-z0-9]{2,8})?$/', $locale) !== 1) {
+            if (! DocLocales::isWellFormed($locale)) {
                 $this->report->error("Translation with an unusable locale ('{$locale}') was skipped.");
 
                 continue;
@@ -44,10 +54,13 @@ final class TranslationImporter
                 continue;
             }
 
-            $this->buffer[] = [
+            $this->buffer[$pageId.':'.$locale] = [
                 'doc_page_id' => $pageId,
                 'locale' => $locale,
                 'title' => Str::limit(trim((string) ($translation['title'] ?? '')), 255, ''),
+                'excerpt' => self::nullableString($translation['excerpt'] ?? null, 255),
+                'meta_title' => self::nullableString($translation['meta_title'] ?? null, 255),
+                'meta_description' => self::nullableString($translation['meta_description'] ?? null, 500),
                 'content' => $this->media->rewrite((string) ($translation['content'] ?? '')),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -68,11 +81,18 @@ final class TranslationImporter
         }
 
         DB::table('docs_page_translations')->upsert(
-            $this->buffer,
+            array_values($this->buffer),
             ['doc_page_id', 'locale'],
-            ['title', 'content', 'updated_at'],
+            ['title', 'excerpt', 'meta_title', 'meta_description', 'content', 'updated_at'],
         );
 
         $this->buffer = [];
+    }
+
+    private static function nullableString(mixed $value, int $limit): ?string
+    {
+        $value = is_scalar($value) ? trim((string) $value) : '';
+
+        return $value === '' ? null : Str::limit($value, $limit, '');
     }
 }

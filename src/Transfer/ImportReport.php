@@ -19,6 +19,7 @@ final class ImportReport
         'pages_updated' => 0,
         'pages_skipped' => 0,
         'translations_imported' => 0,
+        'collection_translations_imported' => 0,
         'media_imported' => 0,
         'media_failed' => 0,
     ];

@@ -20,10 +20,24 @@
                        : asset('favicon.svg');
     // Languages available for the CURRENT page (English + its translations).
     $pageLocales = $pageLocales ?? ['en'];
+    // The language this page renders in (content AND chrome), and the one the
+    // reader chose — they differ when a page lacks the reader's language.
     $docsCurrentLocale = $currentLocale ?? 'en';
+    $docsPreferredLocale = $preferredLocale ?? $docsCurrentLocale;
+    $docsT = fn (string $key, array $replace = []): string => __('docs::docs.'.$key, $replace, $docsCurrentLocale);
+    $docsScriptStrings = [
+        'noResults' => $docsT('no_results'),
+        'copy' => $docsT('copy'),
+        'copied' => $docsT('copied'),
+        'helpfulOne' => $docsT('helpful_count_one'),
+        'helpfulOther' => $docsT('helpful_count_other'),
+    ];
+    // Share image: the page's featured image, else the docs-wide one from settings.
+    $docsShareImage = filled($ogImage ?? null) ? $ogImage : \Magna\Docs\Support\PublicMedia::url($docsSettings->og_image_path ?? null);
+    $docsShareImageAlt = filled($ogImage ?? null) ? ($ogImageAlt ?? ($title ?? $docsSiteName)) : $docsSiteName;
 @endphp
 <!DOCTYPE html>
-<html lang="{{ request()->cookie('docs_lang', app()->getLocale()) }}" class="scroll-smooth">
+<html lang="{{ $docsCurrentLocale }}" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,13 +49,28 @@
     <meta name="description" content="{{ $description ?? '' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ $canonical ?? url()->current() }}">
+    @foreach($alternates ?? [] as $alternate)
+        <link rel="alternate" hreflang="{{ $alternate['hreflang'] }}" href="{{ $alternate['href'] }}">
+    @endforeach
     <meta property="og:type" content="article">
     <meta property="og:title" content="{{ $title ?? $docsSiteName }}">
     <meta property="og:description" content="{{ $description ?? '' }}">
     <meta property="og:url" content="{{ $canonical ?? url()->current() }}">
     <meta property="og:site_name" content="{{ $docsSiteName }}">
-    <meta name="twitter:card" content="summary">
-    <link rel="alternate" type="application/xml" title="Docs sitemap" href="{{ route('docs.web.sitemap') }}">
+    <meta property="og:locale" content="{{ \Magna\Docs\Support\DocLocales::ogLocale($docsCurrentLocale) }}">
+    @foreach($pageLocales as $code)
+        @if($code !== $docsCurrentLocale)<meta property="og:locale:alternate" content="{{ \Magna\Docs\Support\DocLocales::ogLocale($code) }}">@endif
+    @endforeach
+    @if($docsShareImage)
+        <meta property="og:image" content="{{ $docsShareImage }}">
+        <meta property="og:image:alt" content="{{ $docsShareImageAlt }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:image" content="{{ $docsShareImage }}">
+        <meta name="twitter:image:alt" content="{{ $docsShareImageAlt }}">
+    @else
+        <meta name="twitter:card" content="summary">
+    @endif
+    <link rel="alternate" type="application/xml" title="{{ $docsT('sitemap') }}" href="{{ route('docs.web.sitemap') }}">
 
     @isset($jsonLd)
         @foreach((array) $jsonLd as $ld)
@@ -49,8 +78,8 @@
         @endforeach
     @endisset
 
-    @isset($prev)<link rel="prefetch" href="{{ route('docs.web.show', $prev->slug) }}">@endisset
-    @isset($next)<link rel="prefetch" href="{{ route('docs.web.show', $next->slug) }}">@endisset
+    @isset($prev)<link rel="prefetch" href="{{ route('docs.web.show', $prev['slug']) }}">@endisset
+    @isset($next)<link rel="prefetch" href="{{ route('docs.web.show', $next['slug']) }}">@endisset
 
     {{-- Apply saved theme before paint to avoid a flash --}}
     <script>
@@ -219,18 +248,18 @@
 
 <div class="docs-loadbar" aria-hidden="true"></div>
 
-<a href="#docs-main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[999] focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
+<a href="#docs-main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[999] focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-white">{{ $docsT('skip_to_content') }}</a>
 
 {{-- ── HEADER ─────────────────────────────────────────────────────────────── --}}
 <header class="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800/80 dark:bg-darkBg/80">
     <div class="docs-shell flex h-16 items-center justify-between gap-4">
 
-        <button id="left-sidebar-toggle" class="lg:hidden p-2 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-xl transition-colors" aria-label="Open navigation">
+        <button id="left-sidebar-toggle" class="lg:hidden p-2 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 rounded-xl transition-colors" aria-label="{{ $docsT('open_navigation') }}">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
 
         {{-- Logo --}}
-        <a href="{{ route('docs.web.index') }}" class="flex items-center gap-2.5 shrink-0 mr-auto lg:mr-0" aria-label="{{ $docsSiteName }} home">
+        <a href="{{ route('docs.web.index') }}" class="flex items-center gap-2.5 shrink-0 mr-auto lg:mr-0" aria-label="{{ $docsT('home_link', ['site' => $docsSiteName]) }}">
             @if ($docsLogoUrl)
                 <img src="{{ $docsLogoUrl }}" alt="{{ $docsSiteName }}" class="h-9 w-auto max-w-[150px] object-contain">
             @else
@@ -245,7 +274,7 @@
                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <svg class="h-4 w-4 text-slate-400 group-focus-within:text-brand transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
-                <input type="text" placeholder="Search documentation... ('/' to focus)" id="search-input" autocomplete="off"
+                <input type="text" placeholder="{{ $docsT('search_placeholder') }}" aria-label="{{ $docsT('search_label') }}" id="search-input" autocomplete="off"
                     class="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-1.5 pl-9 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-brand dark:focus:bg-zinc-900 transition-all">
                 <div class="docs-search-results" id="search-results" role="listbox"></div>
             </div>
@@ -253,26 +282,32 @@
 
         {{-- Right zone --}}
         <div class="flex items-center gap-3 shrink-0">
-            {{-- Language switcher --}}
             {{-- Language switcher — only appears when the page has translations --}}
             <div class="relative" id="langWrap" @if(count($pageLocales) <= 1) style="display:none" @endif>
-                <button id="langToggle" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-900 focus:outline-none transition-colors" aria-label="Language" aria-haspopup="true" aria-expanded="false">
+                <button id="langToggle" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-900 focus:outline-none transition-colors" aria-label="{{ $docsT('language') }}" aria-haspopup="true" aria-expanded="false">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m10.5 21 5.25-11.25L21 21m-9-3h6M3.75 6.75h11.25M9 3.75v3M11.25 6.75c0 3.5-2.5 7.5-7.5 9"/></svg>
                 </button>
+                {{-- Every item carries ?lang (English too: ?lang=en is how a reader
+                     goes back), which the server remembers in the docs_lang cookie.
+                     data-no-spa: a language change re-renders the whole page —
+                     sidebar, header and labels — not just the article. --}}
                 <div class="docs-lang-menu" id="langMenu" role="menu">
-                    @foreach($pageLocales as $code)
-                        <a class="docs-lang-item {{ $docsCurrentLocale === $code ? 'active' : '' }}" role="menuitem"
-                           href="{{ url()->current() . ($code === 'en' ? '' : '?lang='.$code) }}">
-                            <span aria-hidden="true">{{ \Magna\Docs\Support\DocLocales::flag($code) }}</span>
-                            <span>{{ \Magna\Docs\Support\DocLocales::label($code) }}</span>
-                            @if($docsCurrentLocale === $code)<svg class="ml-auto h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>@endif
-                        </a>
-                    @endforeach
+                    @if(count($pageLocales) > 1)
+                        @foreach($pageLocales as $code)
+                            <a class="docs-lang-item {{ $docsCurrentLocale === $code ? 'active' : '' }}" role="menuitem" data-no-spa
+                               href="{{ url()->current().'?lang='.rawurlencode($code) }}" hreflang="{{ $code }}" lang="{{ $code }}"
+                               title="{{ \Magna\Docs\Support\DocLocales::englishName($code) }}">
+                                <span aria-hidden="true">{{ \Magna\Docs\Support\DocLocales::flag($code) }}</span>
+                                <span>{{ \Magna\Docs\Support\DocLocales::label($code) }}</span>
+                                @if($docsCurrentLocale === $code)<svg class="ml-auto h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>@endif
+                            </a>
+                        @endforeach
+                    @endif
                 </div>
             </div>
 
             {{-- Theme toggle --}}
-            <button id="theme-toggle" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-900 focus:outline-none transition-colors" aria-label="Toggle theme">
+            <button id="theme-toggle" class="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-900 focus:outline-none transition-colors" aria-label="{{ $docsT('toggle_theme') }}">
                 <svg id="theme-toggle-sun" class="hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707m2.828 9.9a5 5 0 117.072 0 5 5 0 01-7.072 0z"/></svg>
                 <svg id="theme-toggle-moon" class="hidden h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             </button>
@@ -283,7 +318,7 @@
 {{-- Mobile search --}}
 <div class="docs-shell p-4 border-b border-slate-200/60 bg-white/60 dark:bg-zinc-900/20 md:hidden">
     <div class="relative" id="searchWrapMobile">
-        <input type="text" placeholder="Search documentation..." id="search-input-mobile" autocomplete="off"
+        <input type="text" placeholder="{{ $docsT('search_placeholder_short') }}" aria-label="{{ $docsT('search_label') }}" id="search-input-mobile" autocomplete="off"
             class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 px-4 text-sm text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-brand">
         <div class="docs-search-results" id="search-results-mobile" role="listbox"></div>
     </div>
@@ -297,8 +332,8 @@
         <div id="left-sidebar-backdrop" class="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm hidden lg:hidden"></div>
         <aside id="left-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-darkBg p-6 shadow-2xl transform -translate-x-full transition-transform duration-300 lg:transition-none lg:transform-none lg:relative lg:w-64 lg:p-0 lg:pt-8 lg:z-0 lg:shadow-none lg:h-[calc(100vh-4rem)] lg:sticky lg:top-16 overflow-y-auto">
             <div class="flex items-center justify-between mb-6 lg:hidden">
-                <span class="font-bold text-xs text-slate-400 uppercase tracking-widest">Navigation</span>
-                <button id="left-sidebar-close" class="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <span class="font-bold text-xs text-slate-400 uppercase tracking-widest">{{ $docsT('navigation') }}</span>
+                <button id="left-sidebar-close" aria-label="{{ $docsT('close') }}" class="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <nav class="space-y-4 pr-2" id="docs-sidebar-nav">
                 @include('docs::partials.sidebar', ['nodes' => $tree ?? [], 'currentSlug' => $currentSlug ?? null])
@@ -314,11 +349,11 @@
         <div id="right-sidebar-backdrop" class="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm hidden xl:hidden"></div>
         <aside id="right-sidebar" class="fixed inset-y-0 right-0 z-50 w-72 bg-white dark:bg-darkBg p-6 shadow-2xl transform translate-x-full transition-transform duration-300 xl:transition-none xl:transform-none xl:relative xl:w-48 xl:p-0 xl:pt-8 xl:z-0 xl:shadow-none xl:h-[calc(100vh-4rem)] xl:sticky xl:top-16 overflow-y-auto">
             <div class="flex items-center justify-between mb-6 xl:hidden">
-                <span class="font-bold text-xs text-slate-400 uppercase tracking-widest">On this page</span>
-                <button id="right-sidebar-close" class="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <span class="font-bold text-xs text-slate-400 uppercase tracking-widest">{{ $docsT('on_this_page') }}</span>
+                <button id="right-sidebar-close" aria-label="{{ $docsT('close') }}" class="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <div class="space-y-4">
-                <h5 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-zinc-200 hidden xl:block">On this page</h5>
+                <h5 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-zinc-200 hidden xl:block">{{ $docsT('on_this_page') }}</h5>
                 <ul class="space-y-2.5 border-l border-slate-100 dark:border-zinc-800 ml-0.5" id="docs-toc-list">
                     @yield('toc')
                 </ul>
@@ -334,21 +369,26 @@
         <a href="https://github.com/Magna-CMS/Magna-Docs" target="_blank" rel="noopener" data-no-spa
            class="inline-flex items-center gap-2 font-medium hover:text-brand transition-colors">
             <svg class="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6 0-.3 0-1 0-2-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0C17 4.6 18 4.9 18 4.9c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.3 0 1.6 0 2.9 0 3.3 0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5Z"/></svg>
-            Made with Magna Docs
+            {{ $docsT('made_with') }}
         </a>
         @endif
     </footer>
 </div>
 
 {{-- Mobile "On this page" trigger — minimal pill --}}
-<button id="mobile-toc-fab" class="xl:hidden fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-darkCard/90 backdrop-blur px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-zinc-300 shadow-sm hover:text-brand hover:border-brand focus:outline-none transition-colors" aria-label="On this page">
+<button id="mobile-toc-fab" class="xl:hidden fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-darkCard/90 backdrop-blur px-3.5 py-2 text-xs font-medium text-slate-600 dark:text-zinc-300 shadow-sm hover:text-brand hover:border-brand focus:outline-none transition-colors" aria-label="{{ $docsT('on_this_page') }}">
     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
-    On this page
+    {{ $docsT('on_this_page') }}
 </button>
 
 <script src="{{ \Magna\Docs\Http\Controllers\DocsPageController::assetUrl('prism.js') }}" defer></script>
 
 <script>
+// Reader-facing strings for the scripts below, in the page's docs language.
+const docsI18n = @json($docsScriptStrings);
+// The language the reader chose; search answers in it.
+const docsLocale = @json($docsPreferredLocale);
+
 // ── Theme toggle (class "dark" + localStorage 'color-theme') ───────────────────
 (function () {
     const sun = document.getElementById('theme-toggle-sun');
@@ -410,7 +450,7 @@ function docsAttachSearch(input, results, wrap) {
     const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const close = () => { results.innerHTML = ''; results.classList.remove('open'); };
     const render = items => {
-        if (!items.length) { results.innerHTML = '<div class="docs-sr-empty">No results found.</div>'; results.classList.add('open'); return; }
+        if (!items.length) { results.innerHTML = '<div class="docs-sr-empty">' + esc(docsI18n.noResults) + '</div>'; results.classList.add('open'); return; }
         results.innerHTML = items.map(i => `<a class="docs-sr-item" href="${i.url}"><div class="docs-sr-title">${esc(i.title)}</div>${i.excerpt ? `<div class="docs-sr-excerpt">${esc(i.excerpt)}</div>` : ''}</a>`).join('');
         results.classList.add('open'); focusIdx = -1;
     };
@@ -419,7 +459,7 @@ function docsAttachSearch(input, results, wrap) {
         const q = input.value.trim();
         if (q.length < 2) { close(); return; }
         timer = setTimeout(() => {
-            fetch('{{ route("docs.web.search") }}?q=' + encodeURIComponent(q)).then(r => r.json()).then(render).catch(close);
+            fetch('{{ route("docs.web.search") }}?q=' + encodeURIComponent(q) + '&lang=' + encodeURIComponent(docsLocale)).then(r => r.json()).then(render).catch(close);
         }, 200);
     });
     input.addEventListener('keydown', e => {
@@ -444,11 +484,11 @@ function docsInitCopyButtons() {
         if (pre.parentNode.classList.contains('code-block-wrapper')) return;
         const w = document.createElement('div'); w.className = 'code-block-wrapper';
         pre.parentNode.insertBefore(w, pre); w.appendChild(pre);
-        const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.textContent = 'Copy';
+        const btn = document.createElement('button'); btn.className = 'copy-btn'; btn.textContent = docsI18n.copy;
         btn.addEventListener('click', () => {
             navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText).then(() => {
-                btn.textContent = 'Copied!'; btn.classList.add('copied');
-                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+                btn.textContent = docsI18n.copied; btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = docsI18n.copy; btn.classList.remove('copied'); }, 2000);
             });
         });
         w.appendChild(btn);
@@ -496,10 +536,7 @@ function docsFeedback(vote) {
 function docsShowHelpfulCount(count) {
     const wrap = document.getElementById('feedbackCount');
     if (!wrap || typeof count !== 'number') return;
-    const num = document.getElementById('feedbackCountNumber');
-    const word = document.getElementById('feedbackCountWord');
-    if (num) num.textContent = String(count);
-    if (word) word.textContent = count === 1 ? 'person' : 'people';
+    wrap.textContent = (count === 1 ? docsI18n.helpfulOne : docsI18n.helpfulOther).replace(':count', String(count));
     wrap.classList.remove('hidden');
 }
 function docsInitFeedback() {
@@ -538,6 +575,9 @@ function docsEnhance() {
             if (!res.ok) throw new Error('bad status');
             const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
             const nm = doc.getElementById('docs-main'); if (!nm) throw new Error('no content');
+            // A page in another language needs the whole shell in that language
+            // (sidebar, header, labels), which only a full load gives.
+            if ((doc.documentElement.lang || 'en') !== (document.documentElement.lang || 'en')) { location.href = url; return; }
             document.getElementById('docs-main').innerHTML = nm.innerHTML;
             const nt = doc.getElementById('docs-toc-list'), ct = document.getElementById('docs-toc-list');
             if (ct) ct.innerHTML = nt ? nt.innerHTML : '';
