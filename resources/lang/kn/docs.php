@@ -1,57 +1,58 @@
 <?php
 
 /*
- * Kannada (kn) strings for the public docs site, as `docs::docs.<key>`.
+ * Strings on the public docs site (layout, page, search, empty states).
+ * Rendered in the reader's docs language as `docs::docs.<key>`; a key missing
+ * from another language falls back to this file.
  *
- * Every value starts as the English text, so a reader never sees a raw key;
- * replace each one with its translation. Keep the :placeholders. What each
- * string is for is described in ../en/docs.php.
+ * Placeholders (:site, :title, :count, :minutes, :date) are filled in by the
+ * plugin — keep them, in whatever position the sentence needs.
  */
 
 return [
     // ── Header, navigation, search ────────────────────────────────────────
-    'skip_to_content' => 'Skip to content',
-    'open_navigation' => 'Open navigation',
-    'close' => 'Close',
-    'home_link' => ':site home',
-    'search_label' => 'Search documentation',
-    'search_placeholder' => "Search documentation... ('/' to focus)",
-    'search_placeholder_short' => 'Search documentation...',
-    'no_results' => 'No results found.',
-    'language' => 'Language',
-    'toggle_theme' => 'Toggle theme',
-    'navigation' => 'Navigation',
-    'no_pages' => 'No pages yet.',
-    'sitemap' => 'Docs sitemap',
+    'skip_to_content' => 'ನೇರವಾಗಿ ವಿಷಯಕ್ಕೆ ಹೋಗಿ',
+    'open_navigation' => 'ಮೆನು ತೆರೆಯಿರಿ',
+    'close' => 'ಮುಚ್ಚಿ',
+    'home_link' => ':site ಮುಖಪುಟ',
+    'search_label' => 'ಮಾರ್ಗದರ್ಶಿಯಲ್ಲಿ ಹುಡುಕಿ',
+    'search_placeholder' => 'ಮಾರ್ಗದರ್ಶಿಯಲ್ಲಿ ಹುಡುಕಿ... (ಟೈಪ್ ಮಾಡಲು \'/\' ಒತ್ತಿ)',
+    'search_placeholder_short' => 'ಮಾರ್ಗದರ್ಶಿಯಲ್ಲಿ ಹುಡುಕಿ...',
+    'no_results' => 'ಯಾವುದೇ ಫಲಿತಾಂಶಗಳು ಸಿಗಲಿಲ್ಲ.',
+    'language' => 'ಭಾಷೆ',
+    'toggle_theme' => 'ಥೀಮ್ ಬದಲಿಸಿ',
+    'navigation' => 'ಮೆನು',
+    'no_pages' => 'ಇನ್ನೂ ಯಾವುದೇ ಪುಟಗಳಿಲ್ಲ.',
+    'sitemap' => 'ಪುಟಗಳ ನಕ್ಷೆ',
 
     // ── "On this page" rail ───────────────────────────────────────────────
-    'on_this_page' => 'On this page',
-    'no_sections' => 'No sections on this page.',
+    'on_this_page' => 'ಈ ಪುಟದಲ್ಲಿ',
+    'no_sections' => 'ಈ ಪುಟದಲ್ಲಿ ಯಾವುದೇ ವಿಭಾಗಗಳಿಲ್ಲ.',
 
     // ── Article ───────────────────────────────────────────────────────────
-    'breadcrumb' => 'Breadcrumb',
-    'breadcrumb_root' => 'Docs',
-    'previous' => '← Previous',
-    'next' => 'Next →',
-    'copy' => 'Copy',
-    'copied' => 'Copied!',
-    'reading_time' => ':minutes min read',
-    'last_updated' => 'Last updated :date',
+    'breadcrumb' => 'ಮಾರ್ಗಸೂಚಿ',
+    'breadcrumb_root' => 'ಮಾರ್ಗದರ್ಶಿ',
+    'previous' => '← ಹಿಂದಿನದು',
+    'next' => 'ಮುಂದಿನದು →',
+    'copy' => 'ಕಾಪಿ ಮಾಡಿ',
+    'copied' => 'ಕಾಪಿ ಆಗಿದೆ!',
+    'reading_time' => ':minutes ನಿಮಿಷಗಳ ಓದು',
+    'last_updated' => 'ಕೊನೆಯದಾಗಿ ನವೀಕರಿಸಿದ್ದು: :date',
 
     // ── "Was this page helpful?" ──────────────────────────────────────────
-    'helpful_question' => 'Was this page helpful?',
-    'helpful_yes' => 'Yes',
-    'helpful_no' => 'No',
-    'helpful_thanks' => 'Thanks for your feedback!',
-    'helpful_count_one' => ':count person found this page helpful.',
-    'helpful_count_other' => ':count people found this page helpful.',
+    'helpful_question' => 'ಈ ಪುಟ ನಿಮಗೆ ಉಪಯುಕ್ತವಾಯಿತೇ?',
+    'helpful_yes' => 'ಹೌದು',
+    'helpful_no' => 'ಇಲ್ಲ',
+    'helpful_thanks' => 'ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆಗೆ ಧನ್ಯವಾದಗಳು!',
+    'helpful_count_one' => ':count ಒಬ್ಬರಿಗೆ ಈ ಪುಟ ಉಪಯುಕ್ತವಾಗಿದೆ.',
+    'helpful_count_other' => ':count ಜನರಿಗೆ ಈ ಪುಟ ಉಪಯುಕ್ತವಾಗಿದೆ.',
 
     // ── Footer ────────────────────────────────────────────────────────────
-    'made_with' => 'Made with Magna Docs',
+    'made_with' => 'Magna Docs ನಲ್ಲಿ ನಿರ್ಮಿಸಲಾಗಿದೆ',
 
     // ── Titles and the empty docs site ────────────────────────────────────
-    'page_title' => ':title — Documentation',
-    'documentation' => 'Documentation',
-    'browse_documentation' => 'Browse the documentation.',
-    'nothing_published' => 'No documentation has been published yet. Once a page is published it becomes the home page.',
+    'page_title' => ':title — ಮಾರ್ಗದರ್ಶಿ',
+    'documentation' => 'ಮಾರ್ಗದರ್ಶಿ',
+    'browse_documentation' => 'ಮಾರ್ಗದರ್ಶಿ ಪುಟಗಳನ್ನು ನೋಡಿ.',
+    'nothing_published' => 'ಇನ್ನೂ ಯಾವುದೇ ಮಾರ್ಗದರ್ಶಿ ಪ್ರಕಟವಾಗಿಲ್ಲ. ಮೊದಲ ಪುಟ ಪ್ರಕಟವಾದ ತಕ್ಷಣ ಅದೇ ಮುಖಪುಟವಾಗುತ್ತದೆ.',
 ];

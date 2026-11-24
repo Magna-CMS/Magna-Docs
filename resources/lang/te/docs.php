@@ -1,57 +1,58 @@
 <?php
 
 /*
- * Telugu (te) strings for the public docs site, as `docs::docs.<key>`.
+ * Strings on the public docs site (layout, page, search, empty states).
+ * Rendered in the reader's docs language as `docs::docs.<key>`; a key missing
+ * from another language falls back to this file.
  *
- * Every value starts as the English text, so a reader never sees a raw key;
- * replace each one with its translation. Keep the :placeholders. What each
- * string is for is described in ../en/docs.php.
+ * Placeholders (:site, :title, :count, :minutes, :date) are filled in by the
+ * plugin — keep them, in whatever position the sentence needs.
  */
 
 return [
     // ── Header, navigation, search ────────────────────────────────────────
-    'skip_to_content' => 'Skip to content',
-    'open_navigation' => 'Open navigation',
-    'close' => 'Close',
-    'home_link' => ':site home',
-    'search_label' => 'Search documentation',
-    'search_placeholder' => "Search documentation... ('/' to focus)",
-    'search_placeholder_short' => 'Search documentation...',
-    'no_results' => 'No results found.',
-    'language' => 'Language',
-    'toggle_theme' => 'Toggle theme',
-    'navigation' => 'Navigation',
-    'no_pages' => 'No pages yet.',
-    'sitemap' => 'Docs sitemap',
+    'skip_to_content' => 'విషయానికి వెళ్ళండి',
+    'open_navigation' => 'నావిగేషన్ తెరవండి',
+    'close' => 'మూసివేయండి',
+    'home_link' => ':site హోమ్',
+    'search_label' => 'డాక్యుమెంటేషన్ వెతకండి',
+    'search_placeholder' => 'డాక్యుమెంటేషన్ వెతకండి... (\'/\' నొక్కండి)',
+    'search_placeholder_short' => 'డాక్యుమెంటేషన్ వెతకండి...',
+    'no_results' => 'ఫలితాలేమీ దొరకలేదు.',
+    'language' => 'భాష',
+    'toggle_theme' => 'థీమ్ మార్చండి',
+    'navigation' => 'నావిగేషన్',
+    'no_pages' => 'ఇంకా పేజీలు లేవు.',
+    'sitemap' => 'డాక్స్ సైట్‌మ్యాప్',
 
     // ── "On this page" rail ───────────────────────────────────────────────
-    'on_this_page' => 'On this page',
-    'no_sections' => 'No sections on this page.',
+    'on_this_page' => 'ఈ పేజీలో',
+    'no_sections' => 'ఈ పేజీలో విభాగాలేమీ లేవు.',
 
     // ── Article ───────────────────────────────────────────────────────────
-    'breadcrumb' => 'Breadcrumb',
-    'breadcrumb_root' => 'Docs',
-    'previous' => '← Previous',
-    'next' => 'Next →',
-    'copy' => 'Copy',
-    'copied' => 'Copied!',
-    'reading_time' => ':minutes min read',
-    'last_updated' => 'Last updated :date',
+    'breadcrumb' => 'బ్రెడ్‌క్రంబ్',
+    'breadcrumb_root' => 'డాక్స్',
+    'previous' => '← మునుపటిది',
+    'next' => 'తదుపరి →',
+    'copy' => 'కాపీ',
+    'copied' => 'కాపీ అయింది!',
+    'reading_time' => ':minutes నిమిషాలు చదవాలి',
+    'last_updated' => 'చివరిగా :date నవీకరించబడింది',
 
     // ── "Was this page helpful?" ──────────────────────────────────────────
-    'helpful_question' => 'Was this page helpful?',
-    'helpful_yes' => 'Yes',
-    'helpful_no' => 'No',
-    'helpful_thanks' => 'Thanks for your feedback!',
-    'helpful_count_one' => ':count person found this page helpful.',
-    'helpful_count_other' => ':count people found this page helpful.',
+    'helpful_question' => 'ఈ పేజీ ఉపయోగకరంగా ఉందా?',
+    'helpful_yes' => 'అవును',
+    'helpful_no' => 'కాదు',
+    'helpful_thanks' => 'మీ అభిప్రాయానికి ధన్యవాదాలు!',
+    'helpful_count_one' => ':count వ్యక్తికి ఈ పేజీ ఉపయోగపడింది.',
+    'helpful_count_other' => ':count మందికి ఈ పేజీ ఉపయోగపడింది.',
 
     // ── Footer ────────────────────────────────────────────────────────────
-    'made_with' => 'Made with Magna Docs',
+    'made_with' => 'Magna Docs తో రూపొందించబడింది',
 
     // ── Titles and the empty docs site ────────────────────────────────────
-    'page_title' => ':title — Documentation',
-    'documentation' => 'Documentation',
-    'browse_documentation' => 'Browse the documentation.',
-    'nothing_published' => 'No documentation has been published yet. Once a page is published it becomes the home page.',
+    'page_title' => ':title — డాక్యుమెంటేషన్',
+    'documentation' => 'డాక్యుమెంటేషన్',
+    'browse_documentation' => 'డాక్యుమెంటేషన్ చూడండి.',
+    'nothing_published' => 'ఇంకా ఎలాంటి డాక్యుమెంటేషన్ ప్రచురించలేదు. ఒక పేజీ ప్రచురించగానే అదే హోమ్ పేజీ అవుతుంది.',
 ];

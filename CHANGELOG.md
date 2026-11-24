@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-24
+
+### Added
+
+- **The site's own labels in eight Indian languages.** Hindi, Bengali, Gujarati, Kannada,
+  Malayalam, Marathi, Tamil and Telugu now carry real translations of every public docs label
+  ("On this page", search, Previous/Next, "Was this page helpful?", the footer…) instead of the
+  English placeholders 1.3.0 shipped.
+
 ## [1.3.0] - 2026-11-24
 
 ### Added
